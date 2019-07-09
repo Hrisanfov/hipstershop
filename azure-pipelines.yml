@@ -1,0 +1,37 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: Docker@0
+  displayName: 'Build an image'
+  inputs:
+    containerregistrytype: 'Container Registry'
+    dockerRegistryConnection: gcr
+    dockerFile: src/adservice/Dockerfile
+    imageName: 'fin-proj-1e/adservice:$(Build.BuildId)'
+- task: Docker@0
+  displayName: 'Push an image'
+  inputs:
+    containerregistrytype: 'Container Registry'
+    dockerRegistryConnection: gcr
+    action: 'Push an image'
+    imageName: 'fin-proj-1e/adservice:$(Build.BuildId)' 
+- bash: |
+   # Write your commands here
+   cp kubernetes-manifests/adservice.yaml adservice.yaml 
+   sed -i -e 's/image: adservice/image: adservice:$(Build.BuildId)/g' kubernetes-manifests/adservice.yaml
+   sed -i -e 's/image: adservice/image: adservice:$(Build.BuildId)/g' adservice.yaml
+   # Use the environment variables input below to pass secret variables to this script
+  displayName: 'Bash Script'
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish Pipeline Artifact'
+  inputs:
+    artifact: adservice     
